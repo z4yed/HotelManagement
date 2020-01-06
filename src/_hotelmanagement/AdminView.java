@@ -1,15 +1,27 @@
 package _hotelmanagement;
 
 import static _hotelmanagement.Action.con;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
+import com.qoppa.pdfViewerFX.PDFViewer;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -22,9 +34,12 @@ import javafx.stage.Stage;
 public class AdminView extends Application{
     
     static Connection conn;
+    private PDFViewer m_PDFViewer;
     
     public void start(Stage primaryStage)
     {
+        AtomicReference<String> BackUp = new AtomicReference<>();
+       
         
         Button addRoom = new Button();
         addRoom.setText(" Add  Room  ");
@@ -240,16 +255,64 @@ public class AdminView extends Application{
             TextArea ta = new TextArea();
            
             Button exit = new Button("Exit");
+            Button pdf = new Button("View As PDF");
             
             
             VBox layout = new VBox();
             layout.setSpacing(15);
             layout.setAlignment(Pos.CENTER);
 
-            layout.getChildren().addAll(txt, ta, exit);
+            layout.getChildren().addAll(txt, ta, exit, pdf);
+            
+            pdf.setOnAction(value -> {
+            
+                
+                //Creating PDF
+               
+                
+                Document document = new Document();
+                String str =  "Flag 0: User Request\t| Flag 1: Room that is alreadey Booked\t| Flag 2: Room that previously Booked But Currently Availabe | Flag 9: Request Deleted By Admin \n\n "+ BackUp.toString();
+                try {
+                    PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream("/home/zayed/NetBeansProjects/_HotelManagement/report.pdf"));
+                    document.open();
+                    
+                    Font f1 = new Font(Font.FontFamily.TIMES_ROMAN, 7 , Font.NORMAL);
+                    
+                    document.add(new Paragraph(str, f1));
+                    document.close();
+                    writer.close();
+
+
+                } catch (FileNotFoundException ex) {
+                    System.out.println(ex);
+                } catch (DocumentException ex) {
+                    System.out.println(ex);
+                }
+               
+                
+                //View PDF
+                
+                
+                m_PDFViewer = new PDFViewer();
+		BorderPane borderPane = new BorderPane(m_PDFViewer);
+		Scene scene = new Scene(borderPane);
+		primaryStage.setTitle("JavaFX PDFViewer - Qoppa Software");
+		primaryStage.setScene(scene);
+		primaryStage.centerOnScreen();
+		primaryStage.show();
+
+            
+            });
             
              exit.setOnAction(value -> {        
-                extra.close();                
+                
+                 extra.close();
+                
+                 Stage fnial = new Stage();
+                 AdminView av = new AdminView();
+                 av.start(fnial);
+                 
+                
               });
 
 
@@ -265,6 +328,9 @@ public class AdminView extends Application{
                     output += rst.getString(8)+"         |               "+rst.getString(2)+"     |   "+ rst.getString(3)+"   |   "+rst.getString(4)+"  | "+rst.getInt(5)+"              |             "+rst.getDouble(6)+"       |          "+rst.getString(7)+"             |             "+rst.getInt(1)+"           -----           "+rst.getInt(9)+"\n";
                 }
                 ta.setText(output);
+                
+                BackUp.set(output);
+                
                 con.close();
             }
             catch(Exception e)
